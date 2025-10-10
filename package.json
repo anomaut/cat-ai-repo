@@ -1,0 +1,27 @@
+{
+  "name": "cat-ai-tutor",
+  "version": "1.0.0",
+  "description": "CAT-AI - AI-powered classroom activity generator",
+  "engines": {
+    "node": ">=18.x",
+    "npm": ">=9.x"
+  },
+  "scripts": {
+    "install-client": "cd client && npm install",
+    "install-server": "cd server && npm install",
+    "build-client": "cd client && npm run build",
+    "heroku-postbuild": "npm run install-client && npm run install-server && npm run build-client",
+    "start": "cd server && npm start",
+    "dev-client": "cd client && npm run dev",
+    "dev-server": "cd server && npm run dev"
+  },
+  "keywords": [
+    "education",
+    "ai",
+    "teaching",
+    "exercises"
+  ],
+  "author": "",
+  "license": "ISC"
+}
+
