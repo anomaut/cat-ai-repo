@@ -6,7 +6,7 @@ import { pipeline } from "stream";
 import { promisify } from "util";
 import path from "path"
 import fs from "fs"
-import { getCurrentApiKey } from "./apiKeyRoutes.mjs";
+import { getApiKeyFromRequest } from "./apiKeyRoutes.mjs";
 
 const PORT = 3001
 
@@ -14,12 +14,9 @@ const generateRoutes = express.Router();
 
 dotenv.config();
 
-// Function to get OpenAI client with current API key
-const getOpenAIClient = () => {
-  const apiKey = getCurrentApiKey();
-  if (!apiKey || apiKey === 'your-api-key-here') {
-    throw new Error('OpenAI API key not configured');
-  }
+// Function to get OpenAI client with API key from request header
+const getOpenAIClient = (req) => {
+  const apiKey = getApiKeyFromRequest(req);
   return new OpenAI({ apiKey });
 };
 
@@ -31,7 +28,7 @@ generateRoutes.post('/exercise-info', async (req, res) => {
   const prompt = extractionPrompt(text)
 
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
@@ -42,7 +39,7 @@ generateRoutes.post('/exercise-info', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Errore durante l\'analisi' });
+    res.status(500).json({ error: error.message || 'Errore durante l\'analisi' });
   }
 });
 
@@ -50,7 +47,7 @@ generateRoutes.post('/exercise', async (req, res) => {
   const { data, manual } = req.body;
   
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const prompt = generatePrompt(data, manual);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -72,7 +69,7 @@ generateRoutes.post('/exercise', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Errore:', error);
-    res.status(500).json({ error: 'Errore durante la generazione.' });
+    res.status(500).json({ error: error.message || 'Errore durante la generazione.' });
   }
 });
 
@@ -80,7 +77,7 @@ generateRoutes.post('/exercise-again', async (req, res) => {
   const { textBoxes, text } = req.body;
 
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const prompt = regenerateAllPrompt(textBoxes,text);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -92,7 +89,7 @@ generateRoutes.post('/exercise-again', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Errore:', error);
-    res.status(500).json({ error: 'Errore durante la generazione.' });
+    res.status(500).json({ error: error.message || 'Errore durante la generazione.' });
   }
 });
 
@@ -100,7 +97,7 @@ generateRoutes.post('/solution-again', async (req, res) => {
   const { textBoxes } = req.body;
 
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const prompt = regenerateSolutionPrompt(textBoxes);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -112,7 +109,7 @@ generateRoutes.post('/solution-again', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Errore:', error);
-    res.status(500).json({ error: 'Errore durante la generazione.' });
+    res.status(500).json({ error: error.message || 'Errore durante la generazione.' });
   }
 });
 
@@ -120,7 +117,7 @@ generateRoutes.post('/confidence-flag', async (req, res) => {
   const { textBoxes } = req.body;
 
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const prompt = evaluateConfidencePrompt(textBoxes);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -132,7 +129,7 @@ generateRoutes.post('/confidence-flag', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Errore:', error);
-    res.status(500).json({ error: 'Errore durante la generazione.' });
+    res.status(500).json({ error: error.message || 'Errore durante la generazione.' });
   }
 });
 
@@ -140,7 +137,7 @@ generateRoutes.post('/element-again', async (req, res) => {
   const { textBoxes,  selectedId, text } = req.body;
 
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const prompt = regenerateElementPrompt(textBoxes,selectedId,text);
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -152,7 +149,7 @@ generateRoutes.post('/element-again', async (req, res) => {
     res.json(result);
   } catch (error) {
     console.error('Errore:', error);
-    res.status(500).json({ error: 'Errore durante la generazione.' });
+    res.status(500).json({ error: error.message || 'Errore durante la generazione.' });
   }
 });
 
@@ -160,7 +157,7 @@ generateRoutes.post('/image', async (req, res) => {
   const { text, palette } = req.body;
 
   try {
-    const openai = getOpenAIClient();
+    const openai = getOpenAIClient(req);
     const prompt = generateImagePrompt(text, palette);
 
     const response = await openai.images.generate({
@@ -187,7 +184,7 @@ generateRoutes.post('/image', async (req, res) => {
     res.json({ url: fileUrl });
   } catch (error) {
     console.error('Errore:', error);
-    res.status(500).json({ error: 'Errore durante la generazione o il salvataggio dell\'immagine.' });
+    res.status(500).json({ error: error.message || 'Errore durante la generazione o il salvataggio dell\'immagine.' });
   }
 });
 

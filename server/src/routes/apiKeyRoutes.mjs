@@ -1,23 +1,10 @@
 import express from "express";
 import { OpenAI } from "openai";
-import fs from "fs";
-import path from "path";
 
 const apiKeyRoutes = express.Router();
 
-// Store API key in memory (for current session)
-let currentApiKey = process.env.OPENAI_API_KEY || '';
-
-// Initialize API key from .env if it exists and is valid
-if (currentApiKey && currentApiKey !== 'your-api-key-here') {
-  // API key already configured
-  console.log('OpenAI API key found in .env file');
-} else {
-  currentApiKey = '';
-  console.log('No valid OpenAI API key configured. Please configure via the web interface.');
-}
-
 // Validate API key by making a simple test request
+// NOTE: API key is NOT stored on the server - client handles storage with expiration
 apiKeyRoutes.post('/validate', async (req, res) => {
   const { apiKey } = req.body;
 
@@ -39,17 +26,10 @@ apiKeyRoutes.post('/validate', async (req, res) => {
       max_tokens: 5,
     });
 
-    // If successful, store the key
-    currentApiKey = apiKey.trim();
-    
-    // Update the .env file
-    const envPath = path.join(process.cwd(), '.env');
-    const envContent = `OPENAI_API_KEY=${apiKey.trim()}\n`;
-    fs.writeFileSync(envPath, envContent);
-
+    // Return success without storing the key
     res.json({ 
       valid: true, 
-      message: 'API key is valid and has been saved' 
+      message: 'API key is valid' 
     });
   } catch (error) {
     console.error('API key validation error:', error.message);
@@ -60,17 +40,14 @@ apiKeyRoutes.post('/validate', async (req, res) => {
   }
 });
 
-// Check if API key is configured
-apiKeyRoutes.get('/status', (req, res) => {
-  const hasKey = !!(currentApiKey && currentApiKey.trim() !== '' && currentApiKey !== 'your-api-key-here');
-  res.json({ 
-    configured: hasKey,
-    message: hasKey ? 'API key is configured' : 'API key not configured'
-  });
-});
-
-// Get current API key (for the OpenAI client initialization)
-export const getCurrentApiKey = () => currentApiKey;
+// Get API key from request header (client sends it with each request)
+export const getApiKeyFromRequest = (req) => {
+  const apiKey = req.headers['x-api-key'] || process.env.OPENAI_API_KEY;
+  if (!apiKey || apiKey === 'your-api-key-here') {
+    throw new Error('OpenAI API key not provided');
+  }
+  return apiKey;
+};
 
 export default apiKeyRoutes;
 

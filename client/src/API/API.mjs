@@ -3,6 +3,61 @@ const SERVER_URL = import.meta.env.PROD
   ? window.location.origin  // In production, API is served from same origin
   : 'http://localhost:3001'  // In development, use local server
 
+// API Key management with 30-minute expiration
+const API_KEY_STORAGE_KEY = 'catai_openai_key';
+const API_KEY_EXPIRY_KEY = 'catai_openai_key_expiry';
+const API_KEY_EXPIRY_TIME = 30 * 60 * 1000; // 30 minutes in milliseconds
+
+// Store API key with expiration
+const storeApiKey = (apiKey) => {
+  const expiryTime = Date.now() + API_KEY_EXPIRY_TIME;
+  sessionStorage.setItem(API_KEY_STORAGE_KEY, apiKey);
+  sessionStorage.setItem(API_KEY_EXPIRY_KEY, expiryTime.toString());
+};
+
+// Retrieve API key if not expired
+const getStoredApiKey = () => {
+  const apiKey = sessionStorage.getItem(API_KEY_STORAGE_KEY);
+  const expiryTime = sessionStorage.getItem(API_KEY_EXPIRY_KEY);
+  
+  if (!apiKey || !expiryTime) {
+    return null;
+  }
+  
+  if (Date.now() > parseInt(expiryTime)) {
+    // Key has expired, clear it
+    clearApiKey();
+    return null;
+  }
+  
+  return apiKey;
+};
+
+// Clear stored API key
+const clearApiKey = () => {
+  sessionStorage.removeItem(API_KEY_STORAGE_KEY);
+  sessionStorage.removeItem(API_KEY_EXPIRY_KEY);
+};
+
+// Check if API key exists and is valid
+const hasValidApiKey = () => {
+  return getStoredApiKey() !== null;
+};
+
+// Get headers with API key
+const getAuthHeaders = () => {
+  const apiKey = getStoredApiKey();
+  const headers = {
+    'Content-Type': 'application/json',
+  };
+  
+  if (apiKey) {
+    headers['x-api-key'] = apiKey;
+  }
+  
+  return headers;
+};
+
 const handleUploadFile = async (formData) => {
     const response = await fetch(`${SERVER_URL}/api/file/upload`, {
       method: 'POST',
@@ -102,9 +157,7 @@ const handleTextAnalysis = async (text) => {
   try {
     const response = await fetch(`${SERVER_URL}/api/generate/exercise-info`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         text 
       }),
@@ -113,8 +166,8 @@ const handleTextAnalysis = async (text) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     console.log('Risultato:', data);
@@ -131,9 +184,7 @@ const handleExerciseGeneration = async (formdata, manual) => {
     console.log(manual)
     const response = await fetch(`${SERVER_URL}/api/generate/exercise`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         data: formdata,
         manual: manual
@@ -143,8 +194,8 @@ const handleExerciseGeneration = async (formdata, manual) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     console.log('Risultato:', data);
@@ -160,9 +211,7 @@ const handleImageGeneration = async (text, palette) => {
   try {
     const response = await fetch(`${SERVER_URL}/api/generate/image`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         text,
         palette
@@ -172,8 +221,8 @@ const handleImageGeneration = async (text, palette) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     return data;
@@ -189,9 +238,7 @@ const handleExerciseRegeneration = async (textBoxes, text) => {
   try {
     const response = await fetch(`${SERVER_URL}/api/generate/exercise-again`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         textBoxes,
         text
@@ -201,8 +248,8 @@ const handleExerciseRegeneration = async (textBoxes, text) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     console.log('Risultato:', data);
@@ -218,9 +265,7 @@ const handleSolutionRegeneration = async (textBoxes) => {
   try {
     const response = await fetch(`${SERVER_URL}/api/generate/solution-again`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         textBoxes
       }),
@@ -229,8 +274,8 @@ const handleSolutionRegeneration = async (textBoxes) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     console.log('Risultato:', data);
@@ -246,9 +291,7 @@ const handleConfidenceFlags = async (textBoxes) => {
   try {
     const response = await fetch(`${SERVER_URL}/api/generate/confidence-flag`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         textBoxes
       }),
@@ -257,8 +300,8 @@ const handleConfidenceFlags = async (textBoxes) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     console.log('Risultato:', data);
@@ -274,9 +317,7 @@ const handleElementRegeneration = async (textBoxes, selectedId, text) => {
   try {
     const response = await fetch(`${SERVER_URL}/api/generate/element-again`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ 
         textBoxes,
         selectedId,
@@ -287,8 +328,8 @@ const handleElementRegeneration = async (textBoxes, selectedId, text) => {
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('Errore:', data.errore);
-      return { errore: data.errore };
+      console.error('Errore:', data.errore || data.error);
+      return { errore: data.errore || data.error };
     }
 
     console.log('Risultato:', data);
@@ -316,6 +357,11 @@ const handleValidateApiKey = async (apiKey) => {
       return { valid: false, error: data.error || 'Validation failed' };
     }
 
+    // Store the API key on successful validation
+    if (data.valid) {
+      storeApiKey(apiKey);
+    }
+
     return data;
   } catch (error) {
     console.error('Error validating API key:', error);
@@ -324,17 +370,8 @@ const handleValidateApiKey = async (apiKey) => {
 };
 
 const handleCheckApiKeyStatus = async () => {
-  try {
-    const response = await fetch(`${SERVER_URL}/api/apikey/status`, {
-      method: 'GET',
-    });
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error checking API key status:', error);
-    return { configured: false, error: 'Network error or server unavailable' };
-  }
+  // Check if API key is stored and valid on client side
+  return { configured: hasValidApiKey() };
 };
 
 const API = {
@@ -351,7 +388,10 @@ const API = {
   handleLogSave,
   handleConfidenceFlags,
   handleValidateApiKey,
-  handleCheckApiKeyStatus
+  handleCheckApiKeyStatus,
+  clearApiKey,
+  hasValidApiKey,
+  getStoredApiKey
 }
 
 export default API

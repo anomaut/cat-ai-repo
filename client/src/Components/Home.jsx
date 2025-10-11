@@ -167,7 +167,7 @@ function Home(){
                     />
                     
                     <Typography variant="caption" color="text.secondary">
-                        Your API key will be validated and stored securely on the server.
+                        Your API key will be validated and stored securely in your browser session for 30 minutes.
                     </Typography>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
