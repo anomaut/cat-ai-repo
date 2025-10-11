@@ -183,10 +183,15 @@ function Home(){
                         variant="contained"
                         disabled={isValidating || !apiKey.trim()}
                         sx={{
-                            backgroundImage: 'linear-gradient(135deg, #0097a7, #1565c0)',
+                            backgroundColor: '#1565c0',
                             color: 'white',
+                            fontWeight: 'bold',
                             '&:hover': {
-                                backgroundImage: 'linear-gradient(135deg, #006978, #0d47a1)',
+                                backgroundColor: '#0d47a1',
+                            },
+                            '&:disabled': {
+                                backgroundColor: '#b0b0b0',
+                                color: '#ffffff'
                             }
                         }}
                     >
